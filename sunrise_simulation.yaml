@@ -38,6 +38,8 @@ blueprint:
 trigger:
   - platform: time
     at: !input sunrise_time
+  - platform: time
+    at: '01:30:00'
 
 condition:
   - condition: state
@@ -47,8 +49,8 @@ condition:
 variables:
   light_entities: "{{ input.target_lights }}"
   duration_minutes: "{{ states(input.sunrise_duration) | float }}"
-  brightness_pct: "{{ states(input.sunrise_brightness) | float }}"
-  max_brightness: "{{ (brightness_pct / 100 * 255) | round(0) | int }}"
+  max_brightness_pct: "{{ states(input.sunrise_brightness) | float }}"
+  max_brightness: "{{ (max_brightness_pct / 100 * 255) | round(0) | int }}"
   duration_seconds: "{{ duration_minutes * 60 }}"
   step_count: 255
   step_delay: "{{ duration_seconds / step_count }}"
@@ -65,9 +67,8 @@ action:
             - condition: template
               value_template: "{{ repeat.index == 1 }}"
         - variables:
-            brightness: >-
-              {% set raw = (max_brightness * (repeat.index / step_count) ** 2) + 1 %}
-              {{ [raw | round(0), max_brightness] | min | int }}
+            brightness: >
+              {{ [(max_brightness * (repeat.index / step_count) ** 2) + 1 | round(0), max_brightness] | min | int }}
             hue: >-
               {% if repeat.index <= 50 %}
                 {{ 0 + (repeat.index / 50 * 10) }}
