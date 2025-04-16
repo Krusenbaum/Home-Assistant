@@ -3,18 +3,18 @@ blueprint:
   description: Simulate a natural sunrise by gradually increasing brightness and color over time.
   domain: automation
   input:
-    sunrise_time:
-      name: Sunrise Time
-      description: Time at which the sunrise should begin
-      selector:
-        entity:
-          domain: input_datetime
     sunrise_enabled:
       name: Sunrise Enabled Boolean
       description: Boolean helper that controls whether the sunrise should run
       selector:
         entity:
           domain: input_boolean
+    sunrise_time:
+      name: Sunrise Time
+      description: Time at which the sunrise should begin
+      selector:
+        entity:
+          domain: input_datetime
     sunrise_duration:
       name: Sunrise Duration
       description: How long the sunrise should last (in minutes)
@@ -23,7 +23,7 @@ blueprint:
           domain: input_number
     sunrise_brightness:
       name: Max Brightness (%)
-      description: Maximum brightness for the sunrise (as a percentage)
+      description: Maximum brightness for the sunrise (as a percentage from 1 to 100)
       selector:
         entity:
           domain: input_number
@@ -45,9 +45,9 @@ condition:
     state: "on"
 
 variables:
-  light_entities: !input target_lights
-  duration_minutes: "{{ states(!input sunrise_duration) | float }}"
-  brightness_pct: "{{ states(!input sunrise_brightness) | float }}"
+  light_entities: "{{ input.target_lights }}"
+  duration_minutes: "{{ states(input.sunrise_duration) | float }}"
+  brightness_pct: "{{ states(input.sunrise_brightness) | float }}"
   max_brightness: "{{ (brightness_pct / 100 * 255) | round(0) | int }}"
   duration_seconds: "{{ duration_minutes * 60 }}"
   step_count: 255
@@ -85,7 +85,7 @@ action:
                 {{ 90 - ((repeat.index - 150) / 105 * 5) }}
               {% endif %}
         - service: light.turn_on
-          target: !input target_lights
+          target: "{{ light_entities }}"
           data:
             brightness: "{{ brightness }}"
             hs_color: ["{{ hue | float(2) }}", "{{ saturation | float(2) }}"]
