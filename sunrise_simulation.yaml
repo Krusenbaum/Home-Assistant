@@ -60,7 +60,7 @@ variables:
   duration_seconds: "{{ duration_minutes * 60 }}"
   step_count: 255
   step_delay: "{{ duration_seconds / step_count }}"
-action:
+actions:
   - repeat:
       count: 255
       sequence:
