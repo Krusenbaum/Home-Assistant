@@ -73,7 +73,10 @@ action:
             - condition: template
               value_template: >
                 {% if repeat.index == 1 %}
-                  true
+                  {% set any_on = expand(light_entities.entity_id)
+                    | selectattr('state', 'equalto', 'on')
+                    | list | count > 0 %}
+                  {{ not any_on }}
                 {% else %}
                   {% set too_bright = expand(light_entities.entity_id)
                     | selectattr('attributes.brightness', 'defined')
