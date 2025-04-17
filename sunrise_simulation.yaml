@@ -61,8 +61,7 @@ variables:
 action:
   - variables:
       duration_minutes: "{{ states(sunrise_duration_entity) | float }}"
-      brightness_pct: "{{ states(sunrise_brightness_entity) | float }}"
-      max_brightness: "{{ (brightness_pct / 100 * 255) | round(0) | int }}"
+      max_brightness: "{{ (states(sunrise_brightness_entity) | float / 100 * 255) | round(0) | int }}"
       duration_seconds: "{{ duration_minutes * 60 }}"
       step_count: 255
       step_delay: "{{ duration_seconds / step_count }}"
