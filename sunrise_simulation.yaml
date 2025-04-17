@@ -1,8 +1,6 @@
 blueprint:
   name: Sunrise Simulation for Lights
-  description:
-    Simulate a natural sunrise by gradually increasing brightness and color
-    over time.
+  description: Simulate a natural sunrise by gradually increasing brightness and color over time.
   domain: automation
   input:
     sunrise_enabled:
@@ -11,7 +9,7 @@ blueprint:
       selector:
         entity:
           filter:
-            domain: input_boolean
+            - domain: [input_boolean]
           multiple: false
     sunrise_time:
       name: Sunrise Time
@@ -19,7 +17,7 @@ blueprint:
       selector:
         entity:
           filter:
-            domain: input_datetime
+            - domain: [input_datetime]
           multiple: false
     sunrise_duration:
       name: Sunrise Duration
@@ -27,7 +25,7 @@ blueprint:
       selector:
         entity:
           filter:
-            domain: input_number
+            - domain: [input_number]
           multiple: false
     sunrise_brightness:
       name: Max Brightness (%)
@@ -35,7 +33,7 @@ blueprint:
       selector:
         entity:
           filter:
-            domain: input_number
+            - domain: [input_number]
           multiple: false
     target_lights:
       name: Lights
@@ -43,24 +41,31 @@ blueprint:
       selector:
         target:
           entity:
-            domain: light
+            - domain: light
   source_url: https://raw.githubusercontent.com/Krusenbaum/Home-Assistant/refs/heads/main/sunrise_simulation.yaml
+
 triggers:
   - trigger: time
     at: !input sunrise_time
+
 conditions:
   - condition: state
     entity_id: !input sunrise_enabled
     state: "on"
+
 variables:
-  light_entities: "{{ input.target_lights }}"
-  duration_minutes: "{{ states(input.sunrise_duration) | float }}"
-  max_brightness_pct: "{{ states(input.sunrise_brightness) | float }}"
-  max_brightness: "{{ (max_brightness_pct / 100 * 255) | round(0) | int }}"
-  duration_seconds: "{{ duration_minutes * 60 }}"
-  step_count: 255
-  step_delay: "{{ duration_seconds / step_count }}"
-actions:
+  light_entities: !input target_lights
+  sunrise_duration_entity: !input sunrise_duration
+  sunrise_brightness_entity: !input sunrise_brightness
+
+action:
+  - variables:
+      duration_minutes: "{{ states(sunrise_duration_entity) | float }}"
+      brightness_pct: "{{ states(sunrise_brightness_entity) | float }}"
+      max_brightness: "{{ (brightness_pct / 100 * 255) | round(0) | int }}"
+      duration_seconds: "{{ duration_minutes * 60 }}"
+      step_count: 255
+      step_delay: "{{ duration_seconds / step_count }}"
   - repeat:
       count: 255
       sequence:
@@ -68,26 +73,28 @@ actions:
           conditions:
             - condition: template
               value_template: >
-                {{ expand(light_entities.entity_id) | selectattr('state',
-                'equalto', 'off') | list | count == 0 }}
+                {{ expand(light_entities.entity_id) | selectattr('state', 'equalto', 'off') | list | count == 0 }}
             - condition: template
               value_template: "{{ repeat.index == 1 }}"
         - variables:
-            brightness:
-              "{{ [(max_brightness * (repeat.index / step_count) ** 2) + 1 |
-              round(0), max_brightness] | min | int }}
-
-              "
-            hue:
-              "{% if repeat.index <= 50 %}\n  {{ 0 + (repeat.index / 50 * 10) }}\n{%
-              elif repeat.index <= 150 %}\n  {{ 10 + ((repeat.index - 50) / 100 * 25)
-              }}\n{% else %}\n  {{ 35 + ((repeat.index - 150) / 105 * 10) }}\n{% endif
-              %}"
-            saturation:
-              "{% if repeat.index <= 50 %}\n  {{ 100 - (repeat.index / 50 *
-              5) }}\n{% elif repeat.index <= 150 %}\n  {{ 95 - ((repeat.index - 50) /
-              100 * 5) }}\n{% else %}\n  {{ 90 - ((repeat.index - 150) / 105 * 5) }}\n{%
-              endif %}"
+            brightness: >-
+              {{ [(max_brightness * (repeat.index / step_count) ** 2) + 1 | round(0), max_brightness] | min | int }}
+            hue: >-
+              {% if repeat.index <= 50 %}
+                {{ 0 + (repeat.index / 50 * 10) }}
+              {% elif repeat.index <= 150 %}
+                {{ 10 + ((repeat.index - 50) / 100 * 25) }}
+              {% else %}
+                {{ 35 + ((repeat.index - 150) / 105 * 10) }}
+              {% endif %}
+            saturation: >-
+              {% if repeat.index <= 50 %}
+                {{ 100 - (repeat.index / 50 * 5) }}
+              {% elif repeat.index <= 150 %}
+                {{ 95 - ((repeat.index - 50) / 100 * 5) }}
+              {% else %}
+                {{ 90 - ((repeat.index - 150) / 105 * 5) }}
+              {% endif %}
         - action: light.turn_on
           target: "{{ light_entities }}"
           data:
