@@ -78,9 +78,10 @@ action:
                     | list | count > 0 %}
                   {{ not any_on }}
                 {% else %}
+                  {% set tolerance = 12 %}  {# ~5% of 255 #}
                   {% set too_bright = expand(light_entities.entity_id)
                     | selectattr('attributes.brightness', 'defined')
-                    | selectattr('attributes.brightness', 'gt', brightness)
+                    | selectattr('attributes.brightness', 'gt', brightness + tolerance)
                     | list | count > 0 %}
                   {% set any_off = expand(light_entities.entity_id)
                     | selectattr('state', 'equalto', 'off')
