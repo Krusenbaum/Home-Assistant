@@ -107,7 +107,8 @@ action:
                 {{ 90 - ((repeat.index - 150) / 105 * 5) }}
               {% endif %}
         - action: light.turn_on
-          target: "{{ light_entities }}"
+          target:
+            entity_id: "{{ light_entities.entity_id }}"
           data:
             brightness: "{{ brightness }}"
             hs_color:
